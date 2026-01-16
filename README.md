@@ -1,4 +1,4 @@
-web-service-gin (Go + Gin REST API)
+## web-service-gin (Go + Gin REST API)
 
 A small RESTful API written in Go using the Gin framework. It exposes a tiny in-memory “albums” service with three endpoints:
 
@@ -89,3 +89,4 @@ go test -v
 
 - Data is stored in-memory (albums slice). Restarting the server resets the data.
 - POST requests include basic validation and duplicate-id checks (409 Conflict).
+
