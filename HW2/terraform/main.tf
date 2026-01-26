@@ -12,7 +12,7 @@ variable "ssh_key_name" {
 
 # The provider of your cloud service, in this case it is AWS. 
 provider "aws" {
-  region     = "us-west-2" # Which region you are working on
+  region     = "us-east-1" # Which region you are working on
 }
 
 # Your ec2 instance
@@ -37,6 +37,13 @@ resource "aws_security_group" "ssh" {
     description = "SSH"
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.ssh_cidr]
+  }
+  ingress {
+    description = "Go app"
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = [var.ssh_cidr]
   }

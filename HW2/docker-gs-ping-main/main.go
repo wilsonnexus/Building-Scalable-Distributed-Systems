@@ -29,7 +29,7 @@ func main() {
 	router.POST("/albums", postAlbums)
 
 	// Local only: listen on your machine at localhost:8080
-	if err := router.Run("0.0.0.0:8080"); err != nil {
+	if err := router.Run(":8080"); err != nil {
 		// In practice you'd log.Fatalf; keeping it simple.
 		panic(err)
 	}
