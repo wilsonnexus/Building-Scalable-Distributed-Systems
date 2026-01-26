@@ -10,6 +10,17 @@ crash.*.log
 *.tfvars.json
 *.pem
 
+# Binaries / executables
+*.exe
+*.out
+*.bin
+
+# Go build outputs (common names)
+bootstrap
+web-service-gin
+web-service-gin.exe
+
+
 
 
 # Terraform lock file SHOULD be committed
