@@ -1,1 +1,13 @@
 terraform.tfvars
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+
+# Terraform lock file SHOULD be committed
+# (so do NOT ignore .terraform.lock.hcl)
