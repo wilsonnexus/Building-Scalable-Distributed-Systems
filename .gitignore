@@ -34,3 +34,7 @@ web-service-gin.exe
  . t m p - * 
  
  
+# ignore generated binaries / tar exports
+HW2/docker-gs-ping-main/*.tar
+HW2/docker-gs-ping-main/.tmp-*
+HW1b/web-service-gin/web-service-gin*
