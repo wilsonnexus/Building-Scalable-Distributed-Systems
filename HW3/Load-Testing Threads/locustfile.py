@@ -1,7 +1,7 @@
 from locust import FastHttpUser, task, between
 import random
 import time
-
+-
 class AlbumsUser(FastHttpUser):
     wait_time = between(0.1, 0.5)
 
