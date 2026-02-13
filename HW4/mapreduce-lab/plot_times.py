@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-# Your measured times (seconds)
+# Measured times (seconds)
 times_s = {
     "split": 0.247902,
     "map0":  0.148496,
