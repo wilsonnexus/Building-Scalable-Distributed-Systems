@@ -9,11 +9,27 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 *.pem
+*.tfplan
+crash.log
+
+# Secrets / env
+.env
 
 # Binaries / executables
 *.exe
 *.out
 *.bin
+
+# Go
+/bin/
+/vendor/
+*.exe
+*.out
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
 
 # Go build outputs (common names)
 bootstrap
