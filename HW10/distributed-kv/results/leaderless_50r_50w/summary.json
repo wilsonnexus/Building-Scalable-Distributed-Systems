@@ -1,0 +1,12 @@
+{
+  "mode": "leaderless",
+  "strategy": "leaderless",
+  "ops": 500,
+  "read_pct": 50,
+  "write_pct": 50,
+  "stale_reads": 0,
+  "total_reads": 252,
+  "total_writes": 248,
+  "avg_read_latency_ms": 13.957766668191033,
+  "avg_write_latency_ms": 1222.4900633053978
+}

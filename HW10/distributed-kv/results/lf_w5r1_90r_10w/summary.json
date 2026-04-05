@@ -1,0 +1,12 @@
+{
+  "mode": "lf",
+  "strategy": "w5r1",
+  "ops": 500,
+  "read_pct": 90,
+  "write_pct": 10,
+  "stale_reads": 0,
+  "total_reads": 450,
+  "total_writes": 50,
+  "avg_read_latency_ms": 13.371991556163671,
+  "avg_write_latency_ms": 1227.4676959984936
+}

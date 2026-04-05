@@ -1,0 +1,45 @@
+services:
+  ll-n1:
+    build: ./leaderless
+    container_name: ll-n1
+    environment:
+      NODE_ID: "n1"
+      PEERS: "http://ll-n2:8000,http://ll-n3:8000,http://ll-n4:8000,http://ll-n5:8000"
+    ports:
+      - "8101:8000"
+
+  ll-n2:
+    build: ./leaderless
+    container_name: ll-n2
+    environment:
+      NODE_ID: "n2"
+      PEERS: "http://ll-n1:8000,http://ll-n3:8000,http://ll-n4:8000,http://ll-n5:8000"
+    ports:
+      - "8102:8000"
+
+  ll-n3:
+    build: ./leaderless
+    container_name: ll-n3
+    environment:
+      NODE_ID: "n3"
+      PEERS: "http://ll-n1:8000,http://ll-n2:8000,http://ll-n4:8000,http://ll-n5:8000"
+    ports:
+      - "8103:8000"
+
+  ll-n4:
+    build: ./leaderless
+    container_name: ll-n4
+    environment:
+      NODE_ID: "n4"
+      PEERS: "http://ll-n1:8000,http://ll-n2:8000,http://ll-n3:8000,http://ll-n5:8000"
+    ports:
+      - "8104:8000"
+
+  ll-n5:
+    build: ./leaderless
+    container_name: ll-n5
+    environment:
+      NODE_ID: "n5"
+      PEERS: "http://ll-n1:8000,http://ll-n2:8000,http://ll-n3:8000,http://ll-n4:8000"
+    ports:
+      - "8105:8000"

@@ -1,0 +1,50 @@
+services:
+  lf-leader:
+    build: ./leader_follower
+    container_name: lf-leader
+    environment:
+      NODE_ID: "leader"
+      ROLE: "leader"
+      FOLLOWERS: "http://lf-f1:8000,http://lf-f2:8000,http://lf-f3:8000,http://lf-f4:8000"
+    ports:
+      - "8001:8000"
+
+  lf-f1:
+    build: ./leader_follower
+    container_name: lf-f1
+    environment:
+      NODE_ID: "f1"
+      ROLE: "follower"
+      LEADER_URL: "http://lf-leader:8000"
+    ports:
+      - "8002:8000"
+
+  lf-f2:
+    build: ./leader_follower
+    container_name: lf-f2
+    environment:
+      NODE_ID: "f2"
+      ROLE: "follower"
+      LEADER_URL: "http://lf-leader:8000"
+    ports:
+      - "8003:8000"
+
+  lf-f3:
+    build: ./leader_follower
+    container_name: lf-f3
+    environment:
+      NODE_ID: "f3"
+      ROLE: "follower"
+      LEADER_URL: "http://lf-leader:8000"
+    ports:
+      - "8004:8000"
+
+  lf-f4:
+    build: ./leader_follower
+    container_name: lf-f4
+    environment:
+      NODE_ID: "f4"
+      ROLE: "follower"
+      LEADER_URL: "http://lf-leader:8000"
+    ports:
+      - "8005:8000"
