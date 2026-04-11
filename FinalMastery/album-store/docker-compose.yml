@@ -1,0 +1,29 @@
+services:
+  api:
+    build: ./api
+    container_name: album-store-api
+    ports:
+      - "80:8080"
+    environment:
+      DB_PATH: /app/data/app.db
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+      UPLOAD_DIR: /app/uploads
+      PUBLIC_DIR: /app/public
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./public:/app/public
+    restart: unless-stopped
+
+  worker:
+    build: ./worker
+    container_name: album-store-worker
+    environment:
+      DB_PATH: /app/data/app.db
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+      POLL_INTERVAL: "0.5"
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./public:/app/public
+    restart: unless-stopped
