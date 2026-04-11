@@ -1,0 +1,54 @@
+#!/bin/bash
+set -euxo pipefail
+
+apt-get update
+apt-get install -y docker.io git
+
+systemctl enable docker
+systemctl start docker
+
+usermod -aG docker ubuntu || true
+
+cd /home/ubuntu
+
+if [ ! -d apprepo ]; then
+  git clone ${repo_url} apprepo
+else
+  cd apprepo
+  git pull
+fi
+
+cd /home/ubuntu/apprepo/FinalMastery/album-store
+
+mkdir -p data uploads public
+
+PUBLIC_DNS=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)
+
+docker rm -f album-store-api album-store-worker || true
+
+docker build -t album-store-api ./api
+docker build -t album-store-worker ./worker
+
+docker run -d \
+  --name album-store-api \
+  --restart unless-stopped \
+  -p 80:8080 \
+  -e DB_PATH=/app/data/app.db \
+  -e PUBLIC_BASE_URL="http://${PUBLIC_DNS}" \
+  -e UPLOAD_DIR=/app/uploads \
+  -e PUBLIC_DIR=/app/public \
+  -v /home/ubuntu/apprepo/FinalMastery/album-store/data:/app/data \
+  -v /home/ubuntu/apprepo/FinalMastery/album-store/uploads:/app/uploads \
+  -v /home/ubuntu/apprepo/FinalMastery/album-store/public:/app/public \
+  album-store-api
+
+docker run -d \
+  --name album-store-worker \
+  --restart unless-stopped \
+  -e DB_PATH=/app/data/app.db \
+  -e PUBLIC_BASE_URL="http://${PUBLIC_DNS}" \
+  -e POLL_INTERVAL=0.5 \
+  -v /home/ubuntu/apprepo/FinalMastery/album-store/data:/app/data \
+  -v /home/ubuntu/apprepo/FinalMastery/album-store/uploads:/app/uploads \
+  -v /home/ubuntu/apprepo/FinalMastery/album-store/public:/app/public \
+  album-store-worker

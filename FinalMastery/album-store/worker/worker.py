@@ -37,7 +37,6 @@ def complete_job(conn, row):
 
     os.makedirs(os.path.dirname(public_path), exist_ok=True)
 
-    # Simulate async processing work
     time.sleep(1.0)
 
     shutil.copyfile(upload_path, public_path)

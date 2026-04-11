@@ -7,8 +7,8 @@ This service implements the CS 6650 ChaosArena Album Store contract.
 - Go API
 - Python background worker
 - SQLite
-- Docker Compose
-- EC2 deployment
+- Docker Compose for local development
+- Terraform + EC2 for public deployment
 
 ## Endpoints
 
@@ -26,6 +26,10 @@ This service implements the CS 6650 ChaosArena Album Store contract.
 2. Run `docker compose up --build -d`
 3. Run `python tests/smoke_test.py`
 
-## Deployment
+## Terraform Deployment
 
-Deploy to a public EC2 instance and set `PUBLIC_BASE_URL` to that host.
+1. Configure AWS CLI with lab credentials
+2. Set `terraform/terraform.tfvars`
+3. Run `terraform init`
+4. Run `terraform apply -auto-approve`
+5. Use the output `base_url`
