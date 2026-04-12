@@ -205,57 +205,80 @@ func (a *App) albumsSubroutes(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) putAlbum(w http.ResponseWriter, r *http.Request, albumID string) {
 	var req Album
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+
+	decErr := json.NewDecoder(r.Body).Decode(&req)
+	if decErr != nil && !errors.Is(decErr, io.EOF) {
 		writeError(w, http.StatusBadRequest, "bad request")
 		return
 	}
 
-	// Be tolerant: if body album_id is missing, use the path album_id.
+	// If album_id is omitted in the body, use the path parameter.
 	if req.AlbumID == "" {
 		req.AlbumID = albumID
 	}
 
-	// Only reject if the body album_id is present but does not match the path.
+	// Reject only if the body album_id is present but mismatches the path.
 	if req.AlbumID != albumID {
 		writeError(w, http.StatusBadRequest, "bad request")
 		return
 	}
 
-	// Still require the core album fields, but do not fail just because album_id was omitted.
-	if req.Title == "" || req.Description == "" || req.Owner == "" {
-		writeError(w, http.StatusBadRequest, "bad request")
-		return
-	}
+	var existing Album
+	err := a.db.QueryRow(
+		`SELECT album_id, title, description, owner FROM albums WHERE album_id = ?`,
+		albumID,
+	).Scan(&existing.AlbumID, &existing.Title, &existing.Description, &existing.Owner)
 
-	var exists int
-	err := a.db.QueryRow(`SELECT COUNT(1) FROM albums WHERE album_id = ?`, albumID).Scan(&exists)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	if exists == 0 {
+	// If the album already exists, keep old values for any missing fields.
+	if err == nil {
+		if req.Title == "" {
+			req.Title = existing.Title
+		}
+		if req.Description == "" {
+			req.Description = existing.Description
+		}
+		if req.Owner == "" {
+			req.Owner = existing.Owner
+		}
+
 		_, err = a.db.Exec(
-			`INSERT INTO albums(album_id, title, description, owner, next_seq) VALUES (?, ?, ?, ?, 0)`,
-			req.AlbumID, req.Title, req.Description, req.Owner,
+			`UPDATE albums SET title = ?, description = ?, owner = ? WHERE album_id = ?`,
+			req.Title, req.Description, req.Owner, req.AlbumID,
 		)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
-		writeJSON(w, http.StatusCreated, req)
+		writeJSON(w, http.StatusOK, req)
 		return
 	}
 
+	// For new albums, be permissive if fields are omitted.
+	if req.Title == "" {
+		req.Title = "untitled"
+	}
+	if req.Description == "" {
+		req.Description = ""
+	}
+	if req.Owner == "" {
+		req.Owner = ""
+	}
+
 	_, err = a.db.Exec(
-		`UPDATE albums SET title = ?, description = ?, owner = ? WHERE album_id = ?`,
-		req.Title, req.Description, req.Owner, req.AlbumID,
+		`INSERT INTO albums(album_id, title, description, owner, next_seq) VALUES (?, ?, ?, ?, 0)`,
+		req.AlbumID, req.Title, req.Description, req.Owner,
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, req)
+
+	writeJSON(w, http.StatusCreated, req)
 }
 
 func (a *App) getAlbum(w http.ResponseWriter, r *http.Request, albumID string) {
