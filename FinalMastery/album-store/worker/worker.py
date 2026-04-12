@@ -38,8 +38,11 @@ def complete_job(conn, row):
     os.makedirs(os.path.dirname(public_path), exist_ok=True)
 
     # No artificial sleep here
-    if os.path.exists(upload_path):
-        os.replace(upload_path, public_path)
+    if not os.path.exists(upload_path):
+        raise FileNotFoundError(f"upload file not found: {upload_path}")
+
+    shutil.copyfile(upload_path, public_path)
+    os.remove(upload_path)
 
     url = f"{PUBLIC_BASE_URL.rstrip('/')}/media/{photo_id}"
 
