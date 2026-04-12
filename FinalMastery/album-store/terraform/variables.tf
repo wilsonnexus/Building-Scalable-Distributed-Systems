@@ -1,6 +1,6 @@
 variable "aws_region" {
   type    = string
-  default = "us-east-1"
+  default = "us-west-2"
 }
 
 variable "repo_url" {
@@ -9,7 +9,7 @@ variable "repo_url" {
 
 variable "instance_type" {
   type    = string
-  default = "t3.small"
+  default = "t3.large"
 }
 
 variable "ssh_cidr" {
