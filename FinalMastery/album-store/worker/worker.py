@@ -5,7 +5,7 @@ import time
 
 DB_PATH = os.getenv("DB_PATH", "/app/data/app.db")
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost")
-POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "0.5"))
+POLL_INTERVAL = float(os.getenv("POLL_INTERVAL", "0.05"))
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
@@ -37,9 +37,10 @@ def complete_job(conn, row):
 
     os.makedirs(os.path.dirname(public_path), exist_ok=True)
 
-    time.sleep(1.0)
+    # No artificial sleep here
+    if os.path.exists(upload_path):
+        os.replace(upload_path, public_path)
 
-    shutil.copyfile(upload_path, public_path)
     url = f"{PUBLIC_BASE_URL.rstrip('/')}/media/{photo_id}"
 
     conn.execute(

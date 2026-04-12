@@ -210,12 +210,19 @@ func (a *App) putAlbum(w http.ResponseWriter, r *http.Request, albumID string) {
 		return
 	}
 
-	if req.AlbumID == "" || req.Title == "" || req.Description == "" || req.Owner == "" {
+	// Be tolerant: if body album_id is missing, use the path album_id.
+	if req.AlbumID == "" {
+		req.AlbumID = albumID
+	}
+
+	// Only reject if the body album_id is present but does not match the path.
+	if req.AlbumID != albumID {
 		writeError(w, http.StatusBadRequest, "bad request")
 		return
 	}
 
-	if req.AlbumID != albumID {
+	// Still require the core album fields, but do not fail just because album_id was omitted.
+	if req.Title == "" || req.Description == "" || req.Owner == "" {
 		writeError(w, http.StatusBadRequest, "bad request")
 		return
 	}
@@ -276,24 +283,54 @@ func (a *App) uploadPhoto(w http.ResponseWriter, r *http.Request, albumID string
 		return
 	}
 
-	if err := r.ParseMultipartForm(a.maxMemory); err != nil {
-		writeError(w, http.StatusBadRequest, "bad request")
-		return
-	}
-
-	file, header, err := r.FormFile("photo")
+	mr, err := r.MultipartReader()
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "bad request")
 		return
 	}
-	defer file.Close()
 
 	photoID := uuid.NewString()
-	uploadPath := filepath.Join(a.uploadDir, photoID+"_"+sanitizeFilename(header))
+	uploadPath := filepath.Join(a.uploadDir, photoID+"_upload.bin")
 	publicPath := filepath.Join(a.publicDir, photoID)
 
-	if err := saveUploadedFile(file, uploadPath); err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+	foundPhoto := false
+	var out *os.File
+
+	for {
+		part, err := mr.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			if out != nil {
+				out.Close()
+			}
+			writeError(w, http.StatusBadRequest, "bad request")
+			return
+		}
+
+		if part.FormName() != "photo" {
+			continue
+		}
+
+		foundPhoto = true
+		out, err = os.Create(uploadPath)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+
+		_, err = io.Copy(out, part)
+		out.Close()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "internal error")
+			return
+		}
+		break
+	}
+
+	if !foundPhoto {
+		writeError(w, http.StatusBadRequest, "bad request")
 		return
 	}
 

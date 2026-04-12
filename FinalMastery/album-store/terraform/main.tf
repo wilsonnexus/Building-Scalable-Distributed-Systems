@@ -49,6 +49,7 @@ resource "aws_instance" "album_store" {
   vpc_security_group_ids      = [aws_security_group.album_store.id]
   associate_public_ip_address = true
   key_name                    = var.key_name != "" ? var.key_name : null
+  user_data_replace_on_change = true
 
   user_data = templatefile("${path.module}/user_data.sh.tftpl", {
     repo_url = var.repo_url

@@ -42,13 +42,16 @@ docker run -d \
   -v /home/ubuntu/apprepo/FinalMastery/album-store/public:/app/public \
   album-store-api
 
-docker run -d \
-  --name album-store-worker \
-  --restart unless-stopped \
-  -e DB_PATH=/app/data/app.db \
-  -e PUBLIC_BASE_URL="http://$${PUBLIC_DNS}" \
-  -e POLL_INTERVAL=0.5 \
-  -v /home/ubuntu/apprepo/FinalMastery/album-store/data:/app/data \
-  -v /home/ubuntu/apprepo/FinalMastery/album-store/uploads:/app/uploads \
-  -v /home/ubuntu/apprepo/FinalMastery/album-store/public:/app/public \
-  album-store-worker
+for i in 1 2 3 4; do
+  docker rm -f album-store-worker-$i || true
+  docker run -d \
+    --name album-store-worker-$i \
+    --restart unless-stopped \
+    -e DB_PATH=/app/data/app.db \
+    -e PUBLIC_BASE_URL="http://$${PUBLIC_DNS}" \
+    -e POLL_INTERVAL=0.05 \
+    -v /home/ubuntu/apprepo/FinalMastery/album-store/data:/app/data \
+    -v /home/ubuntu/apprepo/FinalMastery/album-store/uploads:/app/uploads \
+    -v /home/ubuntu/apprepo/FinalMastery/album-store/public:/app/public \
+    album-store-worker
+done
