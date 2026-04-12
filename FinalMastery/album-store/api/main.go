@@ -283,54 +283,24 @@ func (a *App) uploadPhoto(w http.ResponseWriter, r *http.Request, albumID string
 		return
 	}
 
-	mr, err := r.MultipartReader()
-	if err != nil {
+	if err := r.ParseMultipartForm(a.maxMemory); err != nil {
 		writeError(w, http.StatusBadRequest, "bad request")
 		return
 	}
 
+	file, header, err := r.FormFile("photo")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad request")
+		return
+	}
+	defer file.Close()
+
 	photoID := uuid.NewString()
-	uploadPath := filepath.Join(a.uploadDir, photoID+"_upload.bin")
+	uploadPath := filepath.Join(a.uploadDir, photoID+"_"+sanitizeFilename(header))
 	publicPath := filepath.Join(a.publicDir, photoID)
 
-	foundPhoto := false
-	var out *os.File
-
-	for {
-		part, err := mr.NextPart()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			if out != nil {
-				out.Close()
-			}
-			writeError(w, http.StatusBadRequest, "bad request")
-			return
-		}
-
-		if part.FormName() != "photo" {
-			continue
-		}
-
-		foundPhoto = true
-		out, err = os.Create(uploadPath)
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-
-		_, err = io.Copy(out, part)
-		out.Close()
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-		break
-	}
-
-	if !foundPhoto {
-		writeError(w, http.StatusBadRequest, "bad request")
+	if err := saveUploadedFile(file, uploadPath); err != nil {
+		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
