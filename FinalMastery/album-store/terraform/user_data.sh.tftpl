@@ -34,7 +34,7 @@ docker run -d \
   --restart unless-stopped \
   -p 80:8080 \
   -e DB_PATH=/app/data/app.db \
-  -e PUBLIC_BASE_URL="http://${PUBLIC_DNS}" \
+  -e PUBLIC_BASE_URL="http://$${PUBLIC_DNS}" \
   -e UPLOAD_DIR=/app/uploads \
   -e PUBLIC_DIR=/app/public \
   -v /home/ubuntu/apprepo/FinalMastery/album-store/data:/app/data \
@@ -46,7 +46,7 @@ docker run -d \
   --name album-store-worker \
   --restart unless-stopped \
   -e DB_PATH=/app/data/app.db \
-  -e PUBLIC_BASE_URL="http://${PUBLIC_DNS}" \
+  -e PUBLIC_BASE_URL="http://$${PUBLIC_DNS}" \
   -e POLL_INTERVAL=0.5 \
   -v /home/ubuntu/apprepo/FinalMastery/album-store/data:/app/data \
   -v /home/ubuntu/apprepo/FinalMastery/album-store/uploads:/app/uploads \
