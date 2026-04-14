@@ -1,0 +1,28 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: reliability-api
+    environment:
+      PORT: "8080"
+      DB_PATH: "/app/reliability.db"
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: reliability-worker
+    environment:
+      DB_PATH: "/app/reliability.db"
+      WORKERS: "1"
+      INFERENCE_DELAY_MS: "0"
+      DB_DELAY_MS: "0"
+      FAIL_RATE_PCT: "0"
+      PROTECTION_ENABLED: "true"
+    volumes:
+      - .:/app

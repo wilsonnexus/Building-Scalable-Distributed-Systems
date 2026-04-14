@@ -1,0 +1,6 @@
+FROM golang:1.22
+WORKDIR /src
+COPY . .
+RUN go mod tidy
+RUN go build -o /bin/worker ./cmd/worker
+CMD ["/bin/worker"]
