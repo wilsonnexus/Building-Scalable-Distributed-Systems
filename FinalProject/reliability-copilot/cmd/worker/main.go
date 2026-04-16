@@ -1,19 +1,30 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"reliability-copilot/internal/classifier"
 	"reliability-copilot/internal/store"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
 
+type queueMessage struct {
+	EventID string `json:"event_id"`
+}
+
 func main() {
-	dbPath := getenv("DB_PATH", "reliability.db")
-	st, err := store.New(dbPath)
+	region := getenv("AWS_REGION", "us-east-1")
+	tableName := getenv("DDB_TABLE_NAME", "reliability-copilot-events")
+	queueURL := getenv("SQS_QUEUE_URL", "")
+
+	st, err := store.New(tableName, queueURL, region)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -27,55 +38,67 @@ func main() {
 	log.Printf("worker starting with WORKERS=%d INFERENCE_DELAY_MS=%d DB_DELAY_MS=%d FAIL_RATE_PCT=%d PROTECTION_ENABLED=%v",
 		workers, inferenceDelayMs, dbDelayMs, failRatePct, protectionEnabled)
 
-	var wg sync.WaitGroup
-	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			for {
-				event, err := st.ClaimNextJob()
-				if err != nil {
-					log.Printf("worker %d claim error: %v", id, err)
-					time.Sleep(500 * time.Millisecond)
-					continue
-				}
-				if event == nil {
-					time.Sleep(300 * time.Millisecond)
-					continue
-				}
+	for {
+		out, err := st.SQS.ReceiveMessage(context.Background(), &sqs.ReceiveMessageInput{
+			QueueUrl:            aws.String(queueURL),
+			MaxNumberOfMessages: 10,
+			WaitTimeSeconds:     20,
+			VisibilityTimeout:   30,
+		})
+		if err != nil {
+			log.Printf("receive error: %v", err)
+			time.Sleep(2 * time.Second)
+			continue
+		}
 
-				mode := "rule-based-worker"
+		if len(out.Messages) == 0 {
+			continue
+		}
 
-				if dbDelayMs > 0 {
-					time.Sleep(time.Duration(dbDelayMs) * time.Millisecond)
+		for _, msg := range out.Messages {
+			var qm queueMessage
+			if err := json.Unmarshal([]byte(*msg.Body), &qm); err != nil {
+				continue
+			}
+
+			event, err := st.GetEvent(qm.EventID)
+			if err != nil {
+				continue
+			}
+
+			mode := "rule-based-worker"
+
+			if dbDelayMs > 0 {
+				time.Sleep(time.Duration(dbDelayMs) * time.Millisecond)
+			}
+
+			if failRatePct > 0 && time.Now().UnixNano()%100 < int64(failRatePct) {
+				if protectionEnabled {
+					_ = st.Complete(event.EventID, "unknown_failure", "Fallback recommendation due to temporary worker failure.", 0.50, "fallback-protected")
+				} else {
+					_ = st.Fail(event.EventID, "simulated worker failure", "unprotected")
 				}
-
-				if failRatePct > 0 && time.Now().UnixNano()%100 < int64(failRatePct) {
-					if protectionEnabled {
-						_ = st.Complete(event.EventID, "unknown_failure", "Fallback recommendation due to temporary worker failure.", 0.50, "fallback-protected")
-					} else {
-						_ = st.Fail(event.EventID, "simulated worker failure", "unprotected")
-					}
-					continue
-				}
-
+			} else {
 				if inferenceDelayMs > 0 {
 					if protectionEnabled && inferenceDelayMs > 1500 {
 						_ = st.Complete(event.EventID, "unknown_failure", "Fallback recommendation due to slow inference path.", 0.52, "fallback-timeout")
-						continue
+					} else {
+						time.Sleep(time.Duration(inferenceDelayMs) * time.Millisecond)
+						category, recommendation, score := classifier.Classify(event.LogText)
+						_ = st.Complete(event.EventID, category, recommendation, score, mode)
 					}
-					time.Sleep(time.Duration(inferenceDelayMs) * time.Millisecond)
-				}
-
-				category, recommendation, score := classifier.Classify(event.LogText)
-				if err := st.Complete(event.EventID, category, recommendation, score, mode); err != nil {
-					log.Printf("worker %d complete error: %v", id, err)
+				} else {
+					category, recommendation, score := classifier.Classify(event.LogText)
+					_ = st.Complete(event.EventID, category, recommendation, score, mode)
 				}
 			}
-		}(i)
-	}
 
-	wg.Wait()
+			_, _ = st.SQS.DeleteMessage(context.Background(), &sqs.DeleteMessageInput{
+				QueueUrl:      aws.String(queueURL),
+				ReceiptHandle: msg.ReceiptHandle,
+			})
+		}
+	}
 }
 
 func getenv(key, fallback string) string {

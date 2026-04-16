@@ -14,14 +14,18 @@ import (
 )
 
 func main() {
-	dbPath := getenv("DB_PATH", "reliability.db")
-	st, err := store.New(dbPath)
+	region := getenv("AWS_REGION", "us-east-1")
+	tableName := getenv("DDB_TABLE_NAME", "reliability-copilot-events")
+	queueURL := getenv("SQS_QUEUE_URL", "")
+
+	st, err := store.New(tableName, queueURL, region)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", healthHandler)
+
 	mux.HandleFunc("/events", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -54,6 +58,7 @@ func main() {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+
 		eventID := strings.TrimPrefix(r.URL.Path, "/results/")
 		result, err := st.GetResult(eventID)
 		if err != nil {
